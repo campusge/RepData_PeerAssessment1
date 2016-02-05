@@ -1,12 +1,4 @@
----
-title: "Coursera Reproducible Research Project Assignment1: analyzing FitBit data"
-author: "campusge"
-date: "05 febbraio 2016"
-output: 
-  html_document: 
-    toc: yes
----
-
+# Reproducible Research: Peer Assessment 1
 
 
 ##Introduction
@@ -22,18 +14,43 @@ The purpose of this project was:
 * interpreting data to answer research questions
 
 Set numeric notation.  From `help(options)`, $scipen$: integer. A penalty to be applied when deciding to print numeric values in fixed or exponential notation. Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than ‘scipen’ digits wider; $digits$:controls the number of digits to print when printing numeric values.
-```{r}
+
+```r
 options("scipen" = 9999, "digits" = 2) 
 ```
 
 ##Load the necessary packages
-```{r}
+
+```r
 packages <- c("dplyr","lubridate","ggplot2")
 ```
 
 Apply to each package the function require that load the package
-```{r}
+
+```r
 sapply(packages, require, character.only=TRUE, quietly=TRUE)
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+```
+
+```
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```
+##     dplyr lubridate   ggplot2 
+##      TRUE      TRUE      TRUE
 ```
 
 ## Data
@@ -58,7 +75,8 @@ The dataset is stored in a comma-separated-value (CSV) file and there are a tota
 ## Loading the data
 
 Download, unzip and load data into data frame `data`. 
-```{r}
+
+```r
 if(!file.exists("getdata-projectfiles-UCI HAR Dataset.zip")) {
         temp <- tempfile()
         download.file("http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",temp)
@@ -73,66 +91,100 @@ data <- read.csv("activity.csv")
 Check the data with `str()` and `head()`:
 
 
-```{r}
+
+```r
 str(data)
 ```
 
-```{r}
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Factor w/ 61 levels "2012-10-01","2012-10-02",..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+```
+
+
+```r
 head(data)
+```
+
+```
+##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25
 ```
 
 
 ## What is mean total number of steps taken per day?
 Sum steps by day.
-```{r} 
+
+```r
 steps_by_day <- aggregate(steps ~ date, data, sum)
 ```
 
 Create Histogram.
-```{r} 
+
+```r
 hist(steps_by_day$steps, main = paste("Total Steps Each Day"), xlab="Number of Steps", breaks=20, col = "grey")
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-8-1.png)\
+
 
 Calculate mean.
-```{r} 
+
+```r
 rmean <- mean(steps_by_day$steps)
 ```
 
 Calculate median.
-```{r} 
+
+```r
 rmedian <- median(steps_by_day$steps)
 ```
 
-Therefore, the `mean` is $`r rmean`$ and the `median` is $`r rmedian`$
+Therefore, the `mean` is $10766.19$ and the `median` is $10765$
 
 
 
 ## What is the average daily activity pattern?
 
 Calculate average steps for each interval for all days. 
-```{r}
+
+```r
 steps_by_interval <- aggregate(steps ~ interval, data, mean)
 ```
 
 
 Add a column with the intervals converted into a more informative time class. 
-```{r}
 
-
+```r
 steps_by_interval$interval_time <- strptime(sprintf("%04d", steps_by_interval$interval), format="%H%M")
-
- 
-
 ```
 Check the data. 
-```{r}
+
+```r
 head(steps_by_interval)
+```
+
+```
+##   interval steps       interval_time
+## 1        0 1.717 2016-02-05 00:00:00
+## 2        5 0.340 2016-02-05 00:05:00
+## 3       10 0.132 2016-02-05 00:10:00
+## 4       15 0.151 2016-02-05 00:15:00
+## 5       20 0.075 2016-02-05 00:20:00
+## 6       25 2.094 2016-02-05 00:25:00
 ```
 
 Plot the Average Number Steps per Day by Interval (coded as time of the day). 
 
-```{r}
+
+```r
 plot(steps_by_interval$interval_time,
      steps_by_interval$steps, type="l", 
      xlab="Time of Day (HH:MM)", 
@@ -140,8 +192,11 @@ plot(steps_by_interval$interval_time,
      main="Average Number of Steps per Day by Interval")
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-14-1.png)\
+
 Find interval with most average steps. 
-```{r}
+
+```r
 max_interval <- steps_by_interval[which.max(steps_by_interval$steps),]
 
 max_interval[3] <- format(max_interval[3],"%H:%M")
@@ -149,23 +204,31 @@ max_interval[3] <- format(max_interval[3],"%H:%M")
 max_interval
 ```
 
-Therefore, the 5-minute interval, on average across all the days in the data set, containing the maximum number of steps is `r max_interval[1]` corresponding to `r max_interval[3]`.
+```
+##     interval steps interval_time
+## 104      835   206         08:35
+```
+
+Therefore, the 5-minute interval, on average across all the days in the data set, containing the maximum number of steps is 835 corresponding to 08:35.
 
 ## Imputing missing values. Compare imputed to non-imputed data.
 Missing data needed to be imputed. Only a simple imputation approach was required for this assignment. 
 Missing values were imputed by inserting the average for each interval. Thus, if interval 10 was missing on 10-02-2012, the average for that interval for all days (0.1320755), replaced the NA. 
-```{r}
+
+```r
 incomplete <- sum(!complete.cases(data))
 imputed_data <- transform(data, steps = ifelse(is.na(data$steps), steps_by_interval$steps[match(data$interval, steps_by_interval$interval)], data$steps))
 ```
 
 Zeroes were imputed for 10-01-2012 because it was the first day and would have been over 9,000 steps higher than the following day, which had only 126 steps. NAs then were assumed to be zeros to fit the rising trend of the data. 
-```{r}
+
+```r
 imputed_data[as.character(imputed_data$date) == "2012-10-01", 1] <- 0
 ```
 
 Recount total steps by day and create Histogram. 
-```{r}
+
+```r
 steps_by_day_i <- aggregate(steps ~ date, imputed_data, sum)
 hist(steps_by_day_i$steps, main = paste("Total Steps Each Day"), col="blue", xlab="Number of Steps")
 
@@ -174,33 +237,38 @@ hist(steps_by_day$steps, main = paste("Total Steps Each Day"), col="red", xlab="
 legend("topright", c("Imputed", "Non-imputed"), col=c("blue", "red"), lwd=10)
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-18-1.png)\
+
 Calculate new mean and median for imputed data. 
-```{r}
+
+```r
 rmean.i <- mean(steps_by_day_i$steps)
 rmedian.i <- median(steps_by_day_i$steps)
 ```
 
 Calculate difference between imputed and non-imputed data.
-```{r}
+
+```r
 mean_diff <- rmean.i - rmean
 med_diff <- rmedian.i - rmedian
 ```
 
 Calculate total difference.
-```{r}
+
+```r
 total_diff <- sum(steps_by_day_i$steps) - sum(steps_by_day$steps)
 ```
-* The imputed data mean is $`r rmean.i`$
-* The imputed data median is $`r rmedian.i`$
-* The difference between the non-imputed mean and imputed mean is $`r mean_diff`$
-* The difference between the non-imputed mean and imputed mean is $`r med_diff`$
-* The difference between total number of steps between imputed and non-imputed data is $`r total_diff`$. Thus, there were $`r total_diff`$ more steps in the imputed data.
+* The imputed data mean is $10589.69$
+* The imputed data median is $10766.19$
+* The difference between the non-imputed mean and imputed mean is $-176.49$
+* The difference between the non-imputed mean and imputed mean is $1.19$
+* The difference between total number of steps between imputed and non-imputed data is $75363.32$. Thus, there were $75363.32$ more steps in the imputed data.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
 Create a plot to compare and contrast number of steps between the week and weekend. There is a higher peak earlier on weekdays, and more overall activity on weekends.  
-``` {r}
 
+```r
 # in italian
 weekdays <- c("lunedì",    "martedì",   "mercoledì", "giovedì",   "venerdì")
 
@@ -212,5 +280,7 @@ steps_by_interval_i <- aggregate(steps ~ interval + dow, imputed_data, mean)
 library(lattice)
 
 xyplot(steps_by_interval_i$steps ~ steps_by_interval_i$interval|steps_by_interval_i$dow, main="Average Steps per Day by Interval",xlab="Interval", ylab="Steps",layout=c(1,2), type="l")
-
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-22-1.png)\
+
